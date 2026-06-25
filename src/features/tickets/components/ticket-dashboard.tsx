@@ -1,17 +1,57 @@
 'use client';
 
-import { useState } from 'react';
-import { useTickets } from '../hooks/use-tickets';
+import { useState, useEffect } from 'react';
+import { useTickets, useChangeTicketStatus } from '../hooks/use-tickets';
 import { useCategories, useWorkflowStates } from '@/features/catalog/hooks/use-catalog';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export const TicketDashboard = () => {
   const [categoryId, setCategoryId] = useState<string>('');
   const [workflowStateId, setWorkflowStateId] = useState<string>('');
+  const router = useRouter();
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setIsAuthenticated(false);
+      router.push('/login');
+    } else {
+      setIsAuthenticated(true);
+    }
+  }, [router]);
 
   const { data: categories } = useCategories();
   const { data: states } = useWorkflowStates();
   const { data: tickets, isLoading } = useTickets({ categoryId, workflowStateId });
+  const changeStatusMutation = useChangeTicketStatus();
+
+  const handleStatusChange = (ticketId: string, newStateId: string) => {
+    changeStatusMutation.mutate({ id: ticketId, newStateId });
+  };
+
+  if (isAuthenticated === false) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center p-8 bg-red-50 border border-red-200 rounded-xl">
+          <h2 className="text-xl font-bold text-red-700 mb-2">Acceso Denegado</h2>
+          <p className="text-red-600">Debes iniciar sesión para ver esta página.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isAuthenticated === null) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Verificando sesión...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -32,7 +72,7 @@ export const TicketDashboard = () => {
           <select
             value={categoryId}
             onChange={(e) => setCategoryId(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-200"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-200 text-gray-900 bg-white"
           >
             <option value="">Todas las categorías</option>
             {categories?.map((cat) => (
@@ -46,7 +86,7 @@ export const TicketDashboard = () => {
           <select
             value={workflowStateId}
             onChange={(e) => setWorkflowStateId(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-200"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-200 text-gray-900 bg-white"
           >
             <option value="">Todos los estados</option>
             {states?.map((state) => (
@@ -91,13 +131,21 @@ export const TicketDashboard = () => {
                     <span className="px-2 py-1 bg-gray-100 rounded-md">{ticket.categoryName}</span>
                   </td>
                   <td className="px-6 py-4 text-sm">
-                    <span className={`px-2 py-1 rounded-md font-medium ${
-                      ticket.statusName === 'COMPLETADO' ? 'bg-green-100 text-green-700' :
-                      ticket.statusName === 'CANCELADO' ? 'bg-red-100 text-red-700' :
-                      'bg-blue-100 text-blue-700'
-                    }`}>
-                      {ticket.statusName}
-                    </span>
+                    <select
+                      value={ticket.workflowStateId}
+                      onChange={(e) => handleStatusChange(ticket.id, e.target.value)}
+                      className={`px-2 py-1 rounded-md font-medium outline-none cursor-pointer ${
+                        ticket.statusName === 'COMPLETADO' ? 'bg-green-100 text-green-700' :
+                        ticket.statusName === 'CANCELADO' ? 'bg-red-100 text-red-700' :
+                        'bg-blue-100 text-blue-700'
+                      }`}
+                    >
+                      {states?.map((state) => (
+                        <option key={state.id} value={state.id}>
+                          {state.name}
+                        </option>
+                      ))}
+                    </select>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500">
                     {new Date(ticket.createdAt).toLocaleDateString()}

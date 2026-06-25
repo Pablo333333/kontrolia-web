@@ -34,7 +34,9 @@ export const ticketsService = {
     return response.data;
   },
   getStats: async (): Promise<any> => {
+    console.log('[TicketsService] Fetching stats...');
     const response = await api.get('/tickets/stats');
+    console.log('[TicketsService] Stats response:', response.data);
     return response.data;
   },
   getComments: async (id: string): Promise<CommentResponse[]> => {

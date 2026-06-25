@@ -1,166 +1,128 @@
 'use client';
 
-import { useState } from 'react';
-import { useTramites } from '../../features/tramites/hooks/use-tramites';
+import { useState, useMemo } from 'react';
+import { useTickets } from '@/features/tickets/hooks/use-tickets';
 import { useWorkflowStates } from '@/features/catalog/hooks/use-catalog';
+import { FileText, Search, User, ArrowRight, Calendar, Clock } from 'lucide-react';
 import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, Filter, Search, FileText, LayoutDashboard, TrendingUp, Calendar as CalendarIcon } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { useDebounce } from '@/hooks/use-debounce';
 
 export default function TramitesPage() {
-  const [statusFilter, setStatusFilter] = useState<string>('');
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const debouncedSearch = useDebounce(searchQuery, 500);
-
-  const { data: tramites, isLoading } = useTramites({ q: debouncedSearch });
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  const { data: tickets, isLoading: isLoadingTickets } = useTickets();
   const { data: states } = useWorkflowStates();
 
-  const filteredTramites = tramites?.filter(t => {
-    const matchesStatus = !statusFilter || t.estadoId === statusFilter;
-    return matchesStatus;
-  });
-
-  const getStatusColor = (statusName?: string) => {
-    switch (statusName) {
-      case 'NUEVO': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'EN_PROCESO': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'COMPLETADO': return 'bg-green-100 text-green-800 border-green-200';
-      case 'CERRADO': return 'bg-stone-100 text-stone-800 border-stone-200';
-      case 'CANCELADO': return 'bg-gray-100 text-gray-800 border-gray-200';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   return (
-    <div className="container mx-auto py-8 space-y-8">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Gestión de Trámites</h1>
-          <p className="text-muted-foreground">Administra y haz seguimiento de documentos formales.</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" asChild title="Mapa">
-            <Link href="/mapa">
-              <MapPin className="h-4 w-4" />
-            </Link>
-          </Button>
-          <Button variant="outline" asChild title="Analítica">
-            <Link href="/analytics">
-              <TrendingUp className="h-4 w-4" />
-            </Link>
-          </Button>
-          <Button variant="outline" asChild title="Calendario">
-            <Link href="/tramites/calendar">
-              <CalendarIcon className="h-4 w-4" />
-            </Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link href="/tramites/kanban">
-              <LayoutDashboard className="mr-2 h-4 w-4" /> Ver Kanban
-            </Link>
-          </Button>
-          <Button asChild>
-            <Link href="/tramites/new">
-              <Plus className="mr-2 h-4 w-4" /> Nuevo Trámite
-            </Link>
-          </Button>
-        </div>
-      </div>
-
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-medium flex items-center gap-2">
-            <Filter className="h-4 w-4" /> Filtros
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por tipo o nombres..."
-                className="pl-8"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <option value="">Todos los estados</option>
-              {states?.map((state) => (
-                <option key={state.id} value={state.id}>{state.name}</option>
-              ))}
-            </select>
+    <main className="min-h-screen bg-gray-50 py-8 px-4 md:px-8">
+      <div className="max-w-7xl mx-auto space-y-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Gestión de Trámites</h1>
+            <p className="text-gray-600">Seguimiento de expedientes, oficios y solicitudes</p>
           </div>
-        </CardContent>
-      </Card>
-
-      <div className="rounded-md border bg-card">
-        <div className="relative w-full overflow-auto">
-          <table className="w-full caption-bottom text-sm">
-            <thead className="[&_tr]:border-b">
-              <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
-                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Tipo</th>
-                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Remitente</th>
-                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Destinatario</th>
-                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Estado</th>
-                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Fecha Límite</th>
-                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="[&_tr:last-child]:border-0">
-              {isLoading ? (
-                <tr>
-                  <td colSpan={6} className="p-4 text-center align-middle">
-                    <div className="flex items-center justify-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" /> Cargando trámites...
-                    </div>
-                  </td>
-                </tr>
-              ) : filteredTramites?.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="p-4 text-center align-middle text-muted-foreground">
-                    No se encontraron trámites.
-                  </td>
-                </tr>
-              ) : (
-                filteredTramites?.map((tramite) => (
-                  <tr key={tramite.id} className="border-b transition-colors hover:bg-muted/50">
-                    <td className="p-4 align-middle font-medium">
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-primary" />
-                        {tramite.tipo}
-                      </div>
-                    </td>
-                    <td className="p-4 align-middle">{tramite.remitenteName}</td>
-                    <td className="p-4 align-middle">{tramite.destinatarioName}</td>
-                    <td className="p-4 align-middle">
-                      <Badge variant="outline" className={getStatusColor(tramite.estadoName)}>
-                        {tramite.estadoName}
-                      </Badge>
-                    </td>
-                    <td className="p-4 align-middle">
-                      {tramite.fechaLimite ? new Date(tramite.fechaLimite).toLocaleDateString() : '-'}
-                    </td>
-                    <td className="p-4 align-middle">
-                      <Button variant="ghost" size="sm" asChild>
-                        <Link href={`/tramites/${tramite.id}`}>Ver Detalle</Link>
-                      </Button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+          <Link
+            href="/tickets/new?category=DOCUMENTACIÓN&title=Nuevo Trámite"
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-center font-bold shadow-sm"
+          >
+            + Iniciar Trámite
+          </Link>
         </div>
+
+        {/* Filtrar tickets que pertenecen a la categoría 'DOCUMENTACIÓN' (que usaremos para trámites) */}
+        {/* O buscar tickets que tengan 'Trámite' en el título/descripción si no hay categoría específica */}
+        {(() => {
+          const tramites = tickets?.filter(t => 
+            t.categoryName === 'DOCUMENTACIÓN' || 
+            t.title.toLowerCase().includes('trámite')
+          ) || [];
+
+          const filteredTramites = tramites.filter(t => 
+            t.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            t.id.toLowerCase().includes(searchTerm.toLowerCase())
+          );
+
+          return (
+            <>
+              {/* Búsqueda */}
+              <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                  <input
+                    type="text"
+                    placeholder="Buscar trámite por título o ID..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-200 text-gray-900 bg-white"
+                  />
+                </div>
+              </div>
+
+              {/* Tabla de Trámites */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-200">
+                      <th className="px-6 py-4 text-sm font-bold text-gray-700">ID / Título</th>
+                      <th className="px-6 py-4 text-sm font-bold text-gray-700">Tipo</th>
+                      <th className="px-6 py-4 text-sm font-bold text-gray-700">Remitente</th>
+                      <th className="px-6 py-4 text-sm font-bold text-gray-700">Estado</th>
+                      <th className="px-6 py-4 text-sm font-bold text-gray-700">Fecha Límite</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {filteredTramites.map((t) => (
+                      <tr key={t.id} className="hover:bg-gray-50 transition-colors group">
+                        <td className="px-6 py-4">
+                          <Link href={`/tickets/${t.id}`} className="block">
+                            <p className="text-xs text-gray-400 mb-1">#{t.id.substring(0, 8)}</p>
+                            <p className="font-bold text-blue-600 group-hover:underline">{t.title}</p>
+                          </Link>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-md font-medium">
+                            {t.title.toLowerCase().includes('oficio') ? 'OFICIO' : 
+                             t.title.toLowerCase().includes('carta') ? 'CARTA' : 'SOLICITUD'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center">
+                              <User size={14} className="text-blue-600" />
+                            </div>
+                            <span className="text-sm text-gray-700">Admin</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`text-xs px-2 py-1 rounded-md font-bold ${
+                            t.statusName === 'COMPLETADO' ? 'bg-green-100 text-green-700' :
+                            t.statusName === 'CANCELADO' ? 'bg-red-100 text-red-700' :
+                            'bg-blue-100 text-blue-700'
+                          }`}>
+                            {t.statusName}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2 text-sm text-gray-500">
+                            <Calendar size={14} />
+                            {new Date(t.createdAt).toLocaleDateString()}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                    {filteredTramites.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="px-6 py-10 text-center text-gray-500">
+                          No se encontraron trámites activos.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          );
+        })()}
       </div>
-    </div>
+    </main>
   );
 }

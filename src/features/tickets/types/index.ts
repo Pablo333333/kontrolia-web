@@ -15,10 +15,15 @@ export interface DocumentResponse {
   name: string;
   url: string;
   type?: string;
+  version: number;
+  isLatest: boolean;
   userId: string;
   ticketId?: string;
   createdAt: string;
+  categoryName?: string; // Para el explorador de documentos
 }
+
+export type Priority = 'BAJA' | 'MEDIA' | 'URGENTE';
 
 export interface TicketResponse {
   id: string;
@@ -29,10 +34,13 @@ export interface TicketResponse {
   categoryId: string;
   workflowStateId: string;
   userId: string;
+  priority: Priority;
+  isArchived: boolean;
   createdAt: string;
   updatedAt: string;
   categoryName?: string;
   statusName?: string;
+  documents?: DocumentResponse[];
 }
 
 export interface TicketHistoryResponse {

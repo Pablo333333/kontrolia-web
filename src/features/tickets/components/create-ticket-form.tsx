@@ -6,6 +6,7 @@ import * as z from 'zod';
 import { useEffect } from 'react';
 import { useCategories, useWorkflowStates } from '@/features/catalog/hooks/use-catalog';
 import { useCreateTicket } from '../hooks/use-tickets';
+import { useSearchParams } from 'next/navigation';
 
 const ticketSchema = z.object({
   title: z.string().min(5, 'El título debe tener al menos 5 caracteres'),
@@ -21,6 +22,7 @@ type TicketFormValues = z.infer<typeof ticketSchema>;
 export const CreateTicketForm = () => {
   const { data: categories, isLoading: loadingCats } = useCategories();
   const { data: states, isLoading: loadingStates } = useWorkflowStates();
+  const searchParams = useSearchParams();
   
   const {
     register,
@@ -31,6 +33,29 @@ export const CreateTicketForm = () => {
   } = useForm<TicketFormValues>({
     resolver: zodResolver(ticketSchema),
   });
+
+  // Pre-seleccionar valores de la URL
+  useEffect(() => {
+    if (categories && states) {
+      const categoryName = searchParams.get('category');
+      const title = searchParams.get('title');
+      const stateName = searchParams.get('state') || 'NUEVO';
+
+      if (categoryName) {
+        const cat = categories.find(c => c.name === categoryName);
+        if (cat) setValue('categoryId', cat.id);
+      }
+
+      if (stateName) {
+        const state = states.find(s => s.name === stateName);
+        if (state) setValue('workflowStateId', state.id);
+      }
+
+      if (title) {
+        setValue('title', title);
+      }
+    }
+  }, [categories, states, searchParams, setValue]);
 
   const createTicket = useCreateTicket({
     onSuccess: () => {

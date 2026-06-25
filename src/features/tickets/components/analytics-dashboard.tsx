@@ -13,33 +13,34 @@ const COLORS = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
 export const AnalyticsDashboard = () => {
   const { data: stats, isLoading } = useTicketStats();
-  const { data: categories } = useCategories();
 
-  if (isLoading) return <div className="p-8 text-center text-gray-500">Analizando datos...</div>;
+  console.log('[AnalyticsDashboard] Received stats:', stats);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-8 animate-pulse">
+        <div className="h-10 w-64 bg-gray-200 rounded-lg mb-8"></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="h-24 bg-white rounded-xl border border-gray-100"></div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="h-[400px] bg-white rounded-xl border border-gray-200"></div>
+          <div className="h-[400px] bg-white rounded-xl border border-gray-200"></div>
+        </div>
+      </div>
+    );
+  }
 
   // Preparar datos para Pie Chart (Categorías)
-  const categoryData = stats?.byCategory.map((item: any) => ({
-    name: categories?.find(c => c.id === item.categoryId)?.name || 'Desconocida',
-    value: item._count._all
-  })) || [];
+  const categoryData = stats?.byCategory || [];
 
   // Preparar datos para Bar Chart (Carga de trabajo)
-  const workloadData = stats?.byUser.map((item: any) => ({
-    name: item.userId.substring(0, 8), // Simplificado
-    tickets: item._count._all
-  })) || [];
+  const workloadData = stats?.byUser || [];
 
   // Preparar datos para Line Chart (Últimos 7 días)
-  // Nota: Esto es una simplificación, en producción se agruparía por fecha real
-  const evolutionData = [
-    { name: 'Día 1', creados: 4, cerrados: 2 },
-    { name: 'Día 2', creados: 3, cerrados: 3 },
-    { name: 'Día 3', creados: 8, cerrados: 4 },
-    { name: 'Día 4', creados: 5, cerrados: 7 },
-    { name: 'Día 5', creados: 9, cerrados: 5 },
-    { name: 'Día 6', creados: 2, cerrados: 8 },
-    { name: 'Día 7', creados: 6, cerrados: 4 },
-  ];
+  const evolutionData = stats?.evolution || [];
 
   return (
     <div className="space-y-8">
@@ -51,28 +52,28 @@ export const AnalyticsDashboard = () => {
           <div className="p-3 bg-red-100 rounded-lg"><AlertCircle className="text-red-600 h-6 w-6" /></div>
           <div>
             <p className="text-sm text-gray-500 font-medium">Urgentes</p>
-            <p className="text-2xl font-bold text-gray-900">12</p>
+            <p className="text-2xl font-bold text-gray-900">{stats?.kpis?.urgent || 0}</p>
           </div>
         </div>
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex items-center gap-4">
           <div className="p-3 bg-blue-100 rounded-lg"><ListTodo className="text-blue-600 h-6 w-6" /></div>
           <div>
             <p className="text-sm text-gray-500 font-medium">Pendientes</p>
-            <p className="text-2xl font-bold text-gray-900">45</p>
+            <p className="text-2xl font-bold text-gray-900">{stats?.kpis?.pending || 0}</p>
           </div>
         </div>
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex items-center gap-4">
           <div className="p-3 bg-green-100 rounded-lg"><CheckCircle2 className="text-green-600 h-6 w-6" /></div>
           <div>
             <p className="text-sm text-gray-500 font-medium">Completados</p>
-            <p className="text-2xl font-bold text-gray-900">128</p>
+            <p className="text-2xl font-bold text-gray-900">{stats?.kpis?.completed || 0}</p>
           </div>
         </div>
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex items-center gap-4">
           <div className="p-3 bg-indigo-100 rounded-lg"><Clock className="text-indigo-600 h-6 w-6" /></div>
           <div>
-            <p className="text-sm text-gray-500 font-medium">Tiempo Promedio</p>
-            <p className="text-2xl font-bold text-gray-900">4.2h</p>
+            <p className="text-sm text-gray-500 font-medium">Total Tickets</p>
+            <p className="text-2xl font-bold text-gray-900">{stats?.kpis?.total || 0}</p>
           </div>
         </div>
       </div>

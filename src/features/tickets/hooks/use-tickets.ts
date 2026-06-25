@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { ticketsService } from '../services/tickets.service';
 import { CreateTicketDto } from '../types';
 import { db } from '@/lib/db';
@@ -43,6 +43,8 @@ export const useTicketStats = () => {
   return useQuery({
     queryKey: ['tickets', 'stats'],
     queryFn: ticketsService.getStats,
+    staleTime: 0, // Forzar datos frescos
+    refetchOnWindowFocus: true,
   });
 };
 
@@ -62,14 +64,15 @@ export const useTicketHistory = (id: string) => {
   });
 };
 
-export const useChangeTicketStatus = (id: string) => {
+export const useChangeTicketStatus = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (newStateId: string) => ticketsService.changeStatus(id, newStateId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tickets', id] });
-      queryClient.invalidateQueries({ queryKey: ['tickets', id, 'history'] });
+    mutationFn: ({ id, newStateId }: { id: string; newStateId: string }) => 
+      ticketsService.changeStatus(id, newStateId),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['tickets', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['tickets', variables.id, 'history'] });
       queryClient.invalidateQueries({ queryKey: ['tickets'] });
     },
   });
