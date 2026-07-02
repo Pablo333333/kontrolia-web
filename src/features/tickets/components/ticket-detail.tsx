@@ -5,7 +5,7 @@ import { useTicket, useTicketComments, useTicketHistory, useTicketDocuments, use
 import { useWorkflowStates } from '@/features/catalog/hooks/use-catalog';
 import { useState } from 'react';
 import { MessageSquare, Paperclip, History, Clock, User, ChevronRight, FileText } from 'lucide-react';
-import { jsPDF } from 'jspdf';
+// import { jsPDF } from 'jspdf'; // Movido a importación dinámica en generatePDF
 
 export const TicketDetail = () => {
   const { id } = useParams();
@@ -50,8 +50,9 @@ export const TicketDetail = () => {
     changeStatusMutation.mutate({ id: ticketId, newStateId });
   };
 
-  const generatePDF = () => {
+  const generatePDF = async () => {
     if (!ticket) return;
+    const { jsPDF } = await import('jspdf');
     const doc = new jsPDF();
     const date = new Date(ticket.createdAt).toLocaleDateString();
     

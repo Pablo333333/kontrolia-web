@@ -18,4 +18,4 @@ export class KontroliaDB extends Dexie {
   }
 }
 
-export const db = new KontroliaDB();
+export const db = typeof window !== 'undefined' ? new KontroliaDB() : null as any;
