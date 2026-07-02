@@ -19,24 +19,26 @@ export default function AnalyticsPage() {
   }
 
   // Procesar datos para gráficos
-  const typeDistribution = tramites?.reduce((acc: any, t) => {
-    acc[t.tipo] = (acc[t.tipo] || 0) + 1;
+  const typeDistribution = tramites?.reduce((acc: Record<string, number>, t) => {
+    const key = t.tipo || 'SIN TIPO';
+    acc[key] = (acc[key] || 0) + 1;
     return acc;
   }, {});
 
   const pieData = Object.keys(typeDistribution || {}).map(key => ({
     name: key,
-    value: typeDistribution[key]
+    value: (typeDistribution as Record<string, number>)[key]
   }));
 
-  const statusDistribution = tramites?.reduce((acc: any, t) => {
-    acc[t.estadoName] = (acc[t.estadoName] || 0) + 1;
+  const statusDistribution = tramites?.reduce((acc: Record<string, number>, t) => {
+    const key = t.estadoName || 'SIN ESTADO';
+    acc[key] = (acc[key] || 0) + 1;
     return acc;
   }, {});
 
   const barData = Object.keys(statusDistribution || {}).map(key => ({
     status: key,
-    cantidad: statusDistribution[key]
+    cantidad: (statusDistribution as Record<string, number>)[key]
   }));
 
   return (

@@ -51,6 +51,7 @@ export const TicketDetail = () => {
   };
 
   const generatePDF = () => {
+    if (!ticket) return;
     const doc = new jsPDF();
     const date = new Date(ticket.createdAt).toLocaleDateString();
     

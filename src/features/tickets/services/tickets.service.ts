@@ -1,5 +1,5 @@
 import api from '@/lib/api';
-import { CreateTicketDto, TicketResponse } from '../types';
+import { CreateTicketDto, TicketResponse, TicketHistoryResponse, DocumentResponse, CommentResponse } from '../types';
 
 export const ticketsService = {
   create: async (data: CreateTicketDto): Promise<TicketResponse> => {
