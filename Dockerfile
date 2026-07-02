@@ -49,8 +49,8 @@ USER nextjs
 
 # Configuración de red para Railway
 EXPOSE 3000
-ENV PORT 3000
-ENV HOSTNAME "0.0.0.0"
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
 
 # El servidor standalone de Next.js genera un server.js en la raíz del output
 CMD ["node", "server.js"]
