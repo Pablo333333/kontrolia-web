@@ -42,7 +42,7 @@ export const AnalyticsDashboard = () => {
 
   return (
     <div className="space-y-8">
-      <h1 className="text-3xl font-bold text-gray-900">Analítica de KONTROLIA</h1>
+      <h1 className="text-3xl font-bold text-gray-900">Analítica de CONECTA</h1>
 
       <div>
         <h2 className="text-lg font-semibold text-gray-800 mb-4">Estado de los mensajes</h2>

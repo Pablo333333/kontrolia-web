@@ -7,15 +7,15 @@ export interface OfflineTicket extends CreateTicketDto {
   synced: boolean;
 }
 
-export class KontroliaDB extends Dexie {
+export class ConectaDB extends Dexie {
   tickets!: Table<OfflineTicket>;
 
   constructor() {
-    super('KontroliaDB');
+    super('ConectaDB');
     this.version(1).stores({
       tickets: '++id, synced, createdAt'
     });
   }
 }
 
-export const db = typeof window !== 'undefined' ? new KontroliaDB() : null as any;
+export const db = typeof window !== 'undefined' ? new ConectaDB() : null as any;

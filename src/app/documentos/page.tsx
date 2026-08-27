@@ -54,7 +54,7 @@ export default function DocumentosPage() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `kontrolia-documentos.${format}`;
+      a.download = `conecta-documentos.${format}`;
       a.click();
       window.URL.revokeObjectURL(url);
     } catch {

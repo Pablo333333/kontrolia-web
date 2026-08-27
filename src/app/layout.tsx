@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "KONTROLIA",
+  title: "CONECTA",
   description: "Sistema de gestión de comunicación inteligente",
   manifest: "/manifest.json",
 };

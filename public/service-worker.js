@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kontrolia-v1';
+const CACHE_NAME = 'conecta-v1';
 const ASSETS_TO_CACHE = [
   '/',
   '/login',

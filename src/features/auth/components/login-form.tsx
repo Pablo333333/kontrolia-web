@@ -18,7 +18,7 @@ export const LoginForm = () => {
   return (
     <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg border border-gray-100">
       <div className="text-center">
-        <h1 className="text-3xl font-bold text-gray-900">KONTROLIA</h1>
+        <h1 className="text-3xl font-bold text-gray-900">CONECTA</h1>
         <p className="mt-2 text-gray-600">Inicia sesión para gestionar tus documentos</p>
       </div>
       

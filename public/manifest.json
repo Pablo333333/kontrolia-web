@@ -1,6 +1,6 @@
 {
-  "name": "KONTROLIA",
-  "short_name": "KONTROLIA",
+  "name": "CONECTA",
+  "short_name": "CONECTA",
   "description": "Sistema de gestión de comunicación inteligente y workflow documental",
   "start_url": "/",
   "display": "standalone",

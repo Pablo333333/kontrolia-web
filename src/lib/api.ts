@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://kontrolia-backend-production.up.railway.app',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://conecta-backend-production.up.railway.app',
 });
 
 api.interceptors.request.use((config) => {

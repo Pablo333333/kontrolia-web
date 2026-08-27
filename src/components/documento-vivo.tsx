@@ -40,7 +40,7 @@ export const DocumentoVivo: React.FC<DocumentoVivoProps> = ({ entityId, entityTy
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    const socket: Socket = io(process.env.NEXT_PUBLIC_API_URL || 'https://kontrolia-backend-production.up.railway.app');
+    const socket: Socket = io(process.env.NEXT_PUBLIC_API_URL || 'https://conecta-backend-production.up.railway.app');
 
     socket.on('connect', () => {
       console.log('Connected to socket');

@@ -59,7 +59,7 @@ export const TicketDetail = () => {
     // Configuración de estilo
     doc.setFont("helvetica", "bold");
     doc.setFontSize(20);
-    doc.text("KONTROLIA - DOCUMENTO FORMAL", 105, 20, { align: "center" });
+    doc.text("CONECTA - DOCUMENTO FORMAL", 105, 20, { align: "center" });
     
     doc.setFontSize(12);
     doc.setFont("helvetica", "normal");
