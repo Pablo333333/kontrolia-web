@@ -2,12 +2,22 @@
 
 import { TicketDashboard } from "@/features/tickets/components/ticket-dashboard";
 import { KanbanBoard } from "@/features/tickets/components/kanban-board";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 import { isManager } from "@/features/auth/utils/roles";
 
-export default function Home() {
+function HomeLoading() {
+  return (
+    <main className="min-h-screen bg-gray-50 py-8 px-4 md:px-8">
+      <div className="max-w-6xl mx-auto space-y-6">
+        <p className="text-sm text-gray-500">Cargando mensajes...</p>
+      </div>
+    </main>
+  );
+}
+
+function HomeContent() {
   const user = useCurrentUser();
   const manager = isManager(user);
   const searchParams = useSearchParams();
@@ -55,5 +65,13 @@ export default function Home() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<HomeLoading />}>
+      <HomeContent />
+    </Suspense>
   );
 }
