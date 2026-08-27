@@ -64,7 +64,7 @@ export const TicketDetail = () => {
     doc.setFontSize(12);
     doc.setFont("helvetica", "normal");
     doc.text(`Fecha: ${date}`, 20, 40);
-    doc.text(`Ticket ID: ${ticket.id}`, 20, 50);
+    doc.text(`Mensaje ID: ${ticket.id}`, 20, 50);
     
     doc.line(20, 55, 190, 55);
     
@@ -92,11 +92,11 @@ export const TicketDetail = () => {
     doc.line(20, 250, 80, 250);
     doc.text("Firma Responsable", 35, 260);
     
-    doc.save(`Ticket_${ticket.id.substring(0, 8)}.pdf`);
+    doc.save(`Mensaje_${ticket.id.substring(0, 8)}.pdf`);
   };
 
-  if (isLoadingTicket) return <div className="p-8 text-center">Cargando ticket...</div>;
-  if (!ticket) return <div className="p-8 text-center text-red-500">Ticket no encontrado</div>;
+  if (isLoadingTicket) return <div className="p-8 text-center">Cargando mensaje...</div>;
+  if (!ticket) return <div className="p-8 text-center text-red-500">Mensaje no encontrado</div>;
 
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-8">
@@ -104,7 +104,7 @@ export const TicketDetail = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-xl shadow-sm border border-gray-200">
         <div>
           <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-            <Link href="/" className="hover:text-blue-600">Tickets</Link>
+            <Link href="/" className="hover:text-blue-600">Mensajes</Link>
             <ChevronRight size={14} />
             <span>{ticket.id.substring(0, 8)}</span>
           </div>

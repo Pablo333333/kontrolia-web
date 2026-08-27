@@ -112,7 +112,7 @@ export default function MapContent() {
                 <div className="space-y-3 p-1">
                   <div className="flex items-center justify-between">
                     <Badge variant={marker.markerType === 'TICKET' ? 'default' : 'secondary'}>
-                      {marker.markerType}
+                      {marker.markerType === 'TICKET' ? 'Mensaje' : 'Trámite'}
                     </Badge>
                     <Badge variant="outline">
                       {marker.markerType === 'TICKET' 

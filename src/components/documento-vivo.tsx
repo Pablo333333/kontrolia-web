@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Send, Paperclip, Sparkles, History, MessageSquare, FileText } from 'lucide-react';
+import { Loader2, Send, Paperclip, Sparkles, History, MessageSquare, FileText, Video, Play } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -20,6 +20,20 @@ interface DocumentoVivoProps {
   entityId: string;
   entityType: 'TICKET' | 'TRAMITE';
 }
+
+const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
+
+const isVideoFile = (type?: string, name?: string) => {
+  const mime = (type || '').toLowerCase();
+  const n = (name || '').toLowerCase();
+  return mime.startsWith('video/') || /\.(mp4|mov|webm|m4v|avi|mkv)$/.test(n);
+};
+
+const isImageFile = (type?: string, name?: string) => {
+  const mime = (type || '').toLowerCase();
+  const n = (name || '').toLowerCase();
+  return mime.startsWith('image/') || /\.(jpg|jpeg|png|webp|gif)$/.test(n);
+};
 
 export const DocumentoVivo: React.FC<DocumentoVivoProps> = ({ entityId, entityType }) => {
   const [newComment, setNewComment] = useState('');
@@ -85,7 +99,13 @@ export const DocumentoVivo: React.FC<DocumentoVivoProps> = ({ entityId, entityTy
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      uploadDocumentMutation.mutate(e.target.files[0]);
+      const file = e.target.files[0];
+      if (file.type.startsWith('video/') && file.size > MAX_VIDEO_BYTES) {
+        alert('El video supera el límite de 50 MB. Comprime el archivo e inténtalo de nuevo.');
+        e.target.value = '';
+        return;
+      }
+      uploadDocumentMutation.mutate(file);
     }
   };
 
@@ -163,7 +183,13 @@ export const DocumentoVivo: React.FC<DocumentoVivoProps> = ({ entityId, entityTy
                 <Button size="icon" variant="outline" asChild>
                   <span><Paperclip className="h-4 w-4" /></span>
                 </Button>
-                <input type="file" className="hidden" onChange={handleFileUpload} disabled={uploadDocumentMutation.isPending} />
+                <input
+                  type="file"
+                  accept="image/*,video/*,audio/*,.pdf,.doc,.docx"
+                  className="hidden"
+                  onChange={handleFileUpload}
+                  disabled={uploadDocumentMutation.isPending}
+                />
               </label>
             </div>
           </div>
@@ -176,14 +202,35 @@ export const DocumentoVivo: React.FC<DocumentoVivoProps> = ({ entityId, entityTy
             ) : documentsQuery.data?.length === 0 ? (
               <p className="col-span-2 text-center text-muted-foreground py-8">No hay archivos adjuntos.</p>
             ) : (
-              documentsQuery.data?.map((doc: any) => (
+              documentsQuery.data?.map((doc: any) => {
+                const video = isVideoFile(doc.type, doc.name);
+                const image = isImageFile(doc.type, doc.name);
+                return (
                 <Card key={doc.id} className="overflow-hidden">
-                  <CardContent className="p-4 flex items-center justify-between">
+                  <CardContent className="p-4 space-y-3">
+                    {video && doc.url ? (
+                      <video
+                        src={doc.url}
+                        controls
+                        preload="metadata"
+                        className="w-full max-h-56 rounded-lg bg-black"
+                      />
+                    ) : image && doc.url ? (
+                      <img src={doc.url} alt={doc.name} className="w-full max-h-40 object-cover rounded-lg" />
+                    ) : null}
+                    <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3 overflow-hidden">
-                      <FileText className="h-8 w-8 text-primary shrink-0" />
+                      {video ? (
+                        <Video className="h-8 w-8 text-violet-600 shrink-0" />
+                      ) : (
+                        <FileText className="h-8 w-8 text-primary shrink-0" />
+                      )}
                       <div className="overflow-hidden">
                         <p className="text-sm font-medium truncate">{doc.name}</p>
-                        <p className="text-xs text-muted-foreground">{new Date(doc.createdAt).toLocaleDateString()}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(doc.createdAt).toLocaleDateString()}
+                          {video ? ' · Video' : ''}
+                        </p>
                         {doc.extractedText && (
                           <Badge variant="secondary" className="mt-1 text-[10px] py-0 px-1">OCR Disponible</Badge>
                         )}
@@ -191,7 +238,9 @@ export const DocumentoVivo: React.FC<DocumentoVivoProps> = ({ entityId, entityTy
                     </div>
                     <div className="flex flex-col gap-2">
                       <Button variant="ghost" size="sm" asChild>
-                        <a href={doc.url} target="_blank" rel="noreferrer">Ver</a>
+                        <a href={doc.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1">
+                          {video ? <><Play className="h-3 w-3" /> Reproducir</> : 'Ver'}
+                        </a>
                       </Button>
                       {doc.extractedText && (
                         <Button 
@@ -202,24 +251,11 @@ export const DocumentoVivo: React.FC<DocumentoVivoProps> = ({ entityId, entityTy
                           Leer OCR
                         </Button>
                       )}
-                      <Button 
-                        variant="secondary" 
-                        size="sm" 
-                        className="text-[10px]"
-                        onClick={async () => {
-                          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/audit/verify/${entityId}`, {
-                            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-                          });
-                          const data = await res.json();
-                          alert(data.isValid ? '✅ Integridad Verificada: La cadena de hashes es válida y el registro no ha sido manipulado.' : '❌ Error de Integridad: Se detectó una discrepancia en la cadena de hashes.');
-                        }}
-                      >
-                        Verificar Blockchain
-                      </Button>
+                    </div>
                     </div>
                   </CardContent>
                 </Card>
-              ))
+              );})
             )}
           </div>
         </TabsContent>

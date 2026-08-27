@@ -1,20 +1,35 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import {
+  useCategories,
+  useRepoDocuments,
+  useDocumentFolders,
+} from '@/features/catalog/hooks/use-catalog';
 import { useTickets, useUploadDocument } from '@/features/tickets/hooks/use-tickets';
-import { useCategories } from '@/features/catalog/hooks/use-catalog';
-import { FileText, Search, Filter, Download, ExternalLink, Folder, Plus, X, Upload } from 'lucide-react';
+import { catalogService } from '@/features/catalog/services/catalog.service';
+import { FileText, Search, Download, ExternalLink, Folder, Plus, X, Upload, FileSpreadsheet, FileDown } from 'lucide-react';
 import Link from 'next/link';
 
 export default function DocumentosPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedFolder, setSelectedFolder] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [uploadingTicketId, setUploadingTicketId] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  
-  const { data: tickets, isLoading: isLoadingTickets } = useTickets();
+  const [exporting, setExporting] = useState<'csv' | 'pdf' | null>(null);
+
+  const queryParams = useMemo(() => ({
+    q: searchTerm || undefined,
+    categoryId: selectedCategory === 'all' ? undefined : selectedCategory,
+    folderId: selectedFolder === 'all' ? undefined : selectedFolder,
+  }), [searchTerm, selectedCategory, selectedFolder]);
+
+  const { data: documents, isLoading, refetch } = useRepoDocuments(queryParams);
   const { data: categories } = useCategories();
+  const { data: folders } = useDocumentFolders();
+  const { data: tickets } = useTickets({ limit: 50 });
   const uploadMutation = useUploadDocument(uploadingTicketId);
 
   const handleUpload = async (e: React.FormEvent) => {
@@ -26,41 +41,34 @@ export default function DocumentosPage() {
         setIsModalOpen(false);
         setSelectedFile(null);
         setUploadingTicketId('');
+        refetch();
         alert('Documento subido con éxito');
       },
     });
   };
 
-  // Extraer todos los documentos de todos los tickets
-  const allDocuments = useMemo(() => {
-    if (!tickets) return [];
-    
-    const docs: any[] = [];
-    tickets.forEach(ticket => {
-      if (ticket.documents) {
-        ticket.documents.forEach((doc: any) => {
-          docs.push({
-            ...doc,
-            ticketTitle: ticket.title,
-            categoryName: ticket.categoryName,
-            categoryId: ticket.categoryId
-          });
-        });
-      }
-    });
-    return docs;
-  }, [tickets]);
+  const handleExport = async (format: 'csv' | 'pdf') => {
+    try {
+      setExporting(format);
+      const blob = await catalogService.exportDocuments(format, queryParams);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `kontrolia-documentos.${format}`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      alert('No se pudo exportar. Intenta nuevamente.');
+    } finally {
+      setExporting(null);
+    }
+  };
 
-  const filteredDocuments = useMemo(() => {
-    return allDocuments.filter(doc => {
-      const matchesSearch = doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          doc.ticketTitle.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = selectedCategory === 'all' || doc.categoryId === selectedCategory;
-      return matchesSearch && matchesCategory && doc.isLatest;
-    });
-  }, [allDocuments, searchTerm, selectedCategory]);
+  if (isLoading) {
+    return <div className="p-8 text-center text-gray-500">Cargando repositorio...</div>;
+  }
 
-  if (isLoadingTickets) return <div className="p-8 text-center">Cargando repositorio...</div>;
+  const docs = documents ?? [];
 
   return (
     <main className="min-h-screen bg-gray-50 py-8 px-4 md:px-8">
@@ -68,24 +76,43 @@ export default function DocumentosPage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Repositorio Central</h1>
-            <p className="text-gray-600">Explora y gestiona todos los documentos del sistema</p>
+            <p className="text-gray-600">Explora, filtra y exporta documentos consolidados</p>
           </div>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-center font-bold shadow-sm flex items-center justify-center gap-2"
-          >
-            <Plus size={18} />
-            Subir Documento
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => handleExport('csv')}
+              disabled={exporting !== null}
+              className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium inline-flex items-center gap-2"
+            >
+              <FileSpreadsheet size={16} />
+              {exporting === 'csv' ? 'Exportando...' : 'Exportar CSV'}
+            </button>
+            <button
+              type="button"
+              onClick={() => handleExport('pdf')}
+              disabled={exporting !== null}
+              className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium inline-flex items-center gap-2"
+            >
+              <FileDown size={16} />
+              {exporting === 'pdf' ? 'Exportando...' : 'Exportar PDF'}
+            </button>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-bold shadow-sm flex items-center gap-2"
+            >
+              <Plus size={18} />
+              Subir Documento
+            </button>
+          </div>
         </div>
 
-        {/* Filtros y Búsqueda */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-200">
           <div className="md:col-span-2 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
             <input
               type="text"
-              placeholder="Buscar por nombre de archivo o ticket..."
+              placeholder="Buscar por archivo o mensaje..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-200 text-gray-900 bg-white"
@@ -103,14 +130,25 @@ export default function DocumentosPage() {
               ))}
             </select>
           </div>
+          <div>
+            <select
+              value={selectedFolder}
+              onChange={(e) => setSelectedFolder(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-200 text-gray-900 bg-white"
+            >
+              <option value="all">Todas las carpetas</option>
+              {folders?.map(folder => (
+                <option key={folder.id} value={folder.id}>{folder.name}</option>
+              ))}
+            </select>
+          </div>
           <div className="flex items-center justify-center bg-gray-50 rounded-lg border border-gray-200 text-sm font-medium text-gray-600">
-            Total: {filteredDocuments.length} archivos
+            Total: {docs.length} archivos
           </div>
         </div>
 
-        {/* Grid de Archivos */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredDocuments.map((doc) => (
+          {docs.map((doc) => (
             <div key={doc.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow group">
               <div className="p-4 bg-gray-50 border-b border-gray-100 flex items-center justify-center h-32 relative">
                 <FileText size={48} className="text-blue-500 opacity-20 group-hover:opacity-40 transition-opacity" />
@@ -127,13 +165,17 @@ export default function DocumentosPage() {
                 <h3 className="font-bold text-gray-900 truncate" title={doc.name}>{doc.name}</h3>
                 <div className="flex items-center gap-2 text-xs text-gray-500">
                   <Folder size={12} />
-                  <span className="truncate">{doc.categoryName}</span>
+                  <span className="truncate">{doc.folderName || doc.categoryName || 'Sin carpeta'}</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-gray-500">
                   <FileText size={12} />
-                  <Link href={`/tickets/${doc.ticketId}`} className="truncate hover:text-blue-600 hover:underline">
-                    {doc.ticketTitle}
-                  </Link>
+                  {doc.ticketId ? (
+                    <Link href={`/tickets/${doc.ticketId}`} className="truncate hover:text-blue-600 hover:underline">
+                      {doc.ticketTitle}
+                    </Link>
+                  ) : (
+                    <span>—</span>
+                  )}
                 </div>
                 <div className="pt-2 flex justify-between items-center text-[10px] text-gray-400 border-t border-gray-50">
                   <span>v{doc.version}</span>
@@ -142,7 +184,7 @@ export default function DocumentosPage() {
               </div>
             </div>
           ))}
-          {filteredDocuments.length === 0 && (
+          {docs.length === 0 && (
             <div className="col-span-full py-20 text-center bg-white rounded-xl border-2 border-dashed border-gray-200">
               <p className="text-gray-500">No se encontraron documentos con los filtros aplicados.</p>
             </div>
@@ -150,7 +192,6 @@ export default function DocumentosPage() {
         </div>
       </div>
 
-      {/* Modal de Subida */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
@@ -162,14 +203,14 @@ export default function DocumentosPage() {
             </div>
             <form onSubmit={handleUpload} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Asociar a Ticket</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Asociar a mensaje</label>
                 <select
                   required
                   value={uploadingTicketId}
                   onChange={(e) => setUploadingTicketId(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-200 text-gray-900 bg-white"
                 >
-                  <option value="">Selecciona un ticket...</option>
+                  <option value="">Selecciona un mensaje...</option>
                   {tickets?.map(t => (
                     <option key={t.id} value={t.id}>{t.title}</option>
                   ))}
@@ -190,19 +231,16 @@ export default function DocumentosPage() {
                         />
                       </label>
                     </div>
-                    <p className="text-xs text-gray-500">PDF, PNG, JPG hasta 10MB</p>
                   </div>
                 </div>
               </div>
-              <div className="pt-4">
-                <button
-                  type="submit"
-                  disabled={uploadMutation.isPending || !selectedFile || !uploadingTicketId}
-                  className="w-full py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
-                >
-                  {uploadMutation.isPending ? 'Subiendo...' : 'Subir Documento'}
-                </button>
-              </div>
+              <button
+                type="submit"
+                disabled={uploadMutation.isPending || !selectedFile || !uploadingTicketId}
+                className="w-full py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 disabled:opacity-50"
+              >
+                {uploadMutation.isPending ? 'Subiendo...' : 'Subir Documento'}
+              </button>
             </form>
           </div>
         </div>

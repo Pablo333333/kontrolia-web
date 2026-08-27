@@ -9,5 +9,6 @@ export interface AuthResponse {
     id: string;
     email: string;
     name?: string;
+    role: 'ADMIN' | 'SUPERVISOR' | 'OPERARIO';
   };
 }

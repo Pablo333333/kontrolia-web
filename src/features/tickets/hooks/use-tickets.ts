@@ -26,16 +26,41 @@ export const useCreateTicket = (options?: { onSuccess?: () => void }) => {
         options.onSuccess();
       }
       if (data?.offline) {
-        alert('Estás offline. El ticket se guardó localmente y se sincronizará cuando recuperes la conexión.');
+        alert('Estás offline. El mensaje se guardó localmente y se sincronizará cuando recuperes la conexión.');
       }
     },
   });
 };
 
-export const useTickets = (filters?: { categoryId?: string; workflowStateId?: string; q?: string }) => {
+export const useTickets = (filters?: {
+  categoryId?: string;
+  subcategoryId?: string;
+  workflowStateId?: string;
+  priority?: string;
+  messageType?: string;
+  userId?: string;
+  destinatarioId?: string;
+  q?: string;
+  includeArchived?: boolean;
+  includeDocuments?: boolean;
+  includeLastResponse?: boolean;
+  limit?: number;
+  offset?: number;
+}, options?: { enabled?: boolean }) => {
   return useQuery({
-    queryKey: ['tickets', filters],
+    queryKey: ['tickets', filters ?? {}],
     queryFn: () => ticketsService.findAll(filters),
+    enabled: options?.enabled ?? true,
+    staleTime: 20_000,
+  });
+};
+
+export const useArchivedTickets = (options?: { enabled?: boolean }) => {
+  return useQuery({
+    queryKey: ['tickets', { includeArchived: true }],
+    queryFn: () => ticketsService.findAll({ includeArchived: true, limit: 100 }),
+    enabled: options?.enabled ?? true,
+    staleTime: 30_000,
   });
 };
 
@@ -43,8 +68,21 @@ export const useTicketStats = () => {
   return useQuery({
     queryKey: ['tickets', 'stats'],
     queryFn: ticketsService.getStats,
-    staleTime: 0, // Forzar datos frescos
-    refetchOnWindowFocus: true,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
+  });
+};
+
+export const useTicketSearch = (
+  q: string,
+  mode: 'literal' | 'semantic' = 'semantic',
+  options?: { enabled?: boolean },
+) => {
+  return useQuery({
+    queryKey: ['tickets', 'search', q, mode],
+    queryFn: () => ticketsService.search({ q, mode, limit: 50 }),
+    enabled: (options?.enabled ?? true) && q.trim().length > 0,
+    staleTime: 15_000,
   });
 };
 
@@ -74,6 +112,7 @@ export const useChangeTicketStatus = () => {
       queryClient.invalidateQueries({ queryKey: ['tickets', variables.id] });
       queryClient.invalidateQueries({ queryKey: ['tickets', variables.id, 'history'] });
       queryClient.invalidateQueries({ queryKey: ['tickets'] });
+      queryClient.invalidateQueries({ queryKey: ['tickets', 'stats'] });
     },
   });
 };
@@ -123,7 +162,7 @@ export const useGenerateTicketPdf = (id: string) => {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `ticket-${id}.pdf`);
+      link.setAttribute('download', `mensaje-${id}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.remove();
